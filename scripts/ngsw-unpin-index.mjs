@@ -6,6 +6,6 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const file = new URL('../dist/expense-tracker/browser/ngsw.json', import.meta.url);
 const ngsw = JSON.parse(readFileSync(file, 'utf8'));
-delete ngsw.hashTable['/index.html'];
+delete ngsw.hashTable[ngsw.index]; // "/index.html", or "/<base-href>/index.html"
 writeFileSync(file, JSON.stringify(ngsw, null, 2));
-console.log('ngsw.json: index.html unpinned from hash verification');
+console.log(`ngsw.json: ${ngsw.index} unpinned from hash verification`);
