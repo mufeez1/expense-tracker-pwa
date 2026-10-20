@@ -1,0 +1,58 @@
+[build]
+  command = "npm run build"
+  publish = "dist/expense-tracker/browser"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# SPA fallback: deep links like /loans load the app (existing files are served first).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# The service worker and its manifest must always be revalidated so updates are detected.
+[[headers]]
+  for = "/ngsw*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Content-hashed bundles never change (ngsw-worker.js is deliberately not matched).
+[[headers]]
+  for = "/chunk-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/main-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/polyfills-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/styles-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "geolocation=(), microphone=(), interest-cohort=()"
