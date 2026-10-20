@@ -372,6 +372,20 @@ textarea {
     border-color: var(--exp);
   }
 }
+// iOS Safari gives date/time inputs a native min width and centred text, pushing them out of narrow cards.
+@supports (-webkit-touch-callout: none) {
+  input[type='date'],
+  input[type='time'],
+  input[type='month'] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-width: 0;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: left;
+  }
+}
 input[type='checkbox'],
 input[type='radio'] {
   width: 20px;
@@ -408,6 +422,10 @@ textarea {
   font-size: 0.85rem;
   margin: 0;
 }
+.file-name {
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
 .check {
   display: flex;
   gap: 8px;
@@ -419,16 +437,16 @@ textarea {
 .form-grid {
   display: grid;
   gap: 0 14px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 600px) {
   .form-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (min-width: 1100px) {
   .form-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 .form {
@@ -1165,7 +1183,7 @@ dialog::backdrop {
 }
 @media (min-width: 600px) {
   .filter-sheet .form-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 .quick-grid {

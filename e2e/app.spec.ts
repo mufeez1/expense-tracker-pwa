@@ -135,7 +135,7 @@ test('PDF, CSV and backup export, then restore into a fresh browser', async ({ p
 
   await page.goto('./backup');
   await page.getByRole('button', { name: 'Create backup' }).click();
-  const [zip] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Download expense-tracker-backup/ }).click()]);
+  const [zip] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Download backup/ }).click()]);
   const zipPath = await zip.path();
 
   const fresh = await browser.newPage();

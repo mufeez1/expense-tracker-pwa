@@ -22,9 +22,10 @@ import { Icon } from '../shared/icon';
       <p class="muted small">Last backup: {{ lastBackup() ? (lastBackup() | date: 'medium') : 'never' }}</p>
       @if (exportFile(); as f) {
         <div class="row wrap">
-          <button class="btn primary" (click)="saveExport(false)"><app-icon name="download" /> Download {{ f.name }} ({{ size(f.blob.size) }})</button>
+          <button class="btn primary" (click)="saveExport(false)"><app-icon name="download" /> Download backup ({{ size(f.blob.size) }})</button>
           @if (mobile) { <button class="btn ghost" (click)="saveExport(true)"><app-icon name="share" /> Share / Save to Files</button> }
         </div>
+        <p class="hint file-name">{{ f.name }}</p>
       } @else {
         <button class="btn primary" (click)="export()" [disabled]="busy()">{{ busy() ? 'Preparing…' : 'Create backup' }}</button>
       }
