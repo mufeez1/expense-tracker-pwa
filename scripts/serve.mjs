@@ -12,6 +12,8 @@ createServer(async (req, res) => {
   let file = join(root, path);
   let body = await readFile(file).catch(() => null);
   if (!body) body = await readFile((file = join(root, 'index.html')));
+  // Mimic hosts that rewrite HTML (Netlify injects a comment) so e2e tests catch service-worker hash breakage.
+  if (extname(file) === '.html') body = String(body).replace('<head>', '<head>\n<!-- injected by host -->');
   res.writeHead(200, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' });
   res.end(body);
 }).listen(port, () => console.log(`Serving ${root} on http://localhost:${port}`));

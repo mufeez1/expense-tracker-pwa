@@ -5,13 +5,6 @@
 [build.environment]
   NODE_VERSION = "24"
 
-# The Angular service worker verifies every file against hashes in ngsw.json, so Netlify must
-# serve the build output byte-for-byte (no HTML post-processing / injected snippets).
-[build.processing]
-  skip_processing = true
-[build.processing.html]
-  pretty_urls = false
-
 # SPA fallback: deep links like /loans load the app (existing files are served first).
 [[redirects]]
   from = "/*"
