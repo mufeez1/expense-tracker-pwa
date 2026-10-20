@@ -26,6 +26,7 @@
   for = "/manifest.webmanifest"
   [headers.values]
     Cache-Control = "no-cache"
+    Content-Type = "application/manifest+json"
 
 # Content-hashed bundles never change (ngsw-worker.js is deliberately not matched).
 [[headers]]
