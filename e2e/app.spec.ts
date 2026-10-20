@@ -157,14 +157,18 @@ test('works offline after the first visit', async ({ page, context, isMobile }) 
     await navigator.serviceWorker.ready;
     if (!navigator.serviceWorker.controller) await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
   });
-  // Wait until the Angular SW has prefetched the app shell into Cache Storage.
-  await page.waitForFunction(async () => {
-    await fetch('/'); // nudges ngsw to initialise its caches
-    for (const key of await caches.keys()) {
-      if (key.includes(':assets:app:cache') && (await (await caches.open(key)).match('/index.html'))) return true;
-    }
-    return false;
-  }, undefined, { polling: 500, timeout: 30_000 });
+  // Wait until the Angular SW has prefetched every app file; it writes the group's metadata last.
+  // (expect.poll, not waitForFunction: an async predicate's Promise would count as truthy at once.)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async () => {
+          const meta = (await caches.keys()).find((k) => k.endsWith(':assets:app:meta'));
+          return !!meta && (await (await caches.open(meta)).keys()).length > 0;
+        }),
+      { timeout: 90_000, intervals: [1000] },
+    )
+    .toBe(true);
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();

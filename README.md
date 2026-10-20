@@ -14,6 +14,7 @@ npm install
 npm start                 # dev server http://localhost:4200 (service worker disabled in dev)
 npm test                  # 40 unit tests (Vitest + fake-indexeddb)
 npm run e2e               # 14 Playwright runs (desktop + Pixel 7) against the production build, uses local Chrome
+E2E_BASE_URL=https://expense-tracker-pwa-5ix8.netlify.app npm run e2e   # same suite against the live site
 npm run build             # production build -> dist/expense-tracker/browser
 npm run serve:prod        # serve the production build on http://localhost:4300 (service worker active)
 node scripts/demo-data.mjs 600 demo-backup.zip   # importable demo data (use 10000 to benchmark)
@@ -83,12 +84,21 @@ duplicates and conflicts, then writes in **one transaction** — an interrupted 
 
 ## Deployment
 
+**Live:** https://expense-tracker-pwa-5ix8.netlify.app (Netlify; config in `netlify.toml`).
+
 Any static HTTPS host (Netlify, Vercel, Cloudflare Pages, GitHub Pages, nginx). Requirements:
 
 1. Upload `dist/expense-tracker/browser`.
 2. **HTTPS** (service workers and install need it; `localhost` is exempt).
 3. SPA fallback: unknown paths → `/index.html` (Netlify: `/* /index.html 200`).
 4. Serve `ngsw-worker.js` and `ngsw.json` without long-lived caching.
+
+`npm run build` also runs `scripts/ngsw-unpin-index.mjs`, which drops `index.html` from the service
+worker's hash table. Netlify injects a comment into served HTML; without this step the hash check fails
+and offline mode silently stops working. The local test server injects a comment too, so e2e covers it.
+
+On the first visit the service worker downloads the app in the background (about 25 s on a slow
+connection). Offline use works from the next launch after that.
 
 When a new version is deployed, open apps show "A new version is available — Reload".
 
