@@ -12,6 +12,7 @@ import { Repo } from '../core/repo';
 import { MoneyPipe, Ui } from '../core/ui';
 import { AttachmentPicker, Pending } from '../shared/attachment-picker';
 import { Icon } from '../shared/icon';
+import { Select, toOptions } from '../shared/select';
 
 const amountValidator = (c: AbstractControl): ValidationErrors | null => (parseMoney(c.value) ? null : { amount: true });
 
@@ -26,7 +27,7 @@ const HEADINGS: Record<TxType, string> = {
 
 @Component({
   selector: 'app-tx-form',
-  imports: [ReactiveFormsModule, AttachmentPicker, Icon, MoneyPipe, RouterLink],
+  imports: [ReactiveFormsModule, AttachmentPicker, Icon, MoneyPipe, RouterLink, Select],
   template: `
     <header class="page-head">
       <button class="icon-btn" type="button" (click)="location.back()" aria-label="Back"><app-icon name="back" /></button>
@@ -50,14 +51,7 @@ const HEADINGS: Record<TxType, string> = {
         @if (k === 'repayment') {
           <div class="field">
             <label for="loanId">Loan being repaid</label>
-            <select id="loanId" formControlName="loanId" (change)="loanPicked()" [attr.aria-invalid]="bad('loanId')">
-              <option value="">Choose…</option>
-              @for (v of loanOptions(); track v.loan.id) {
-                <option [value]="v.loan.id">
-                  {{ v.loan.type === 'lend' ? 'Owed to me by' : 'I owe' }} {{ v.loan.counterparty }} — {{ v.remaining | money }} left
-                </option>
-              }
-            </select>
+            <app-select inputId="loanId" formControlName="loanId" [options]="loanOptions()" [invalid]="bad('loanId')" />
             @if (bad('loanId')) { <span class="err">Choose a loan.</span> }
             @if (!loanOptions().length) { <span class="hint">No outstanding loans. <a routerLink="/new/lend">Lend</a> or <a routerLink="/new/borrow">borrow</a> first.</span> }
           </div>
@@ -82,41 +76,28 @@ const HEADINGS: Record<TxType, string> = {
           @if (k === 'expense' || k === 'income') {
             <div class="field">
               <label for="categoryId">{{ k === 'expense' ? 'Category' : 'Income source' }}</label>
-              <select id="categoryId" formControlName="categoryId" [attr.aria-invalid]="bad('categoryId')">
-                <option value="">Choose…</option>
-                @for (c of k === 'expense' ? lookups.expenseCats() : lookups.incomeCats(); track c.id) {
-                  <option [value]="c.id">{{ c.name }}</option>
-                }
-              </select>
+              <app-select inputId="categoryId" formControlName="categoryId" [options]="k === 'expense' ? expenseCatOpts() : incomeCatOpts()" [invalid]="bad('categoryId')" />
               @if (bad('categoryId')) { <span class="err">Choose a {{ k === 'expense' ? 'category' : 'source' }}.</span> }
             </div>
           }
 
           <div class="field">
             <label for="accountId">{{ accountLabel() }}</label>
-            <select id="accountId" formControlName="accountId" [attr.aria-invalid]="bad('accountId')">
-              <option value="">{{ k === 'transfer' ? 'Choose…' : 'Not specified' }}</option>
-              @for (a of accountsFor(form.controls.accountId.value); track a.id) { <option [value]="a.id">{{ a.name }}</option> }
-            </select>
+            <app-select inputId="accountId" formControlName="accountId" [invalid]="bad('accountId')"
+                        [options]="accountOpts(form.controls.accountId.value, k === 'transfer' ? undefined : 'Not specified')" />
             @if (bad('accountId')) { <span class="err">Choose the source account.</span> }
           </div>
 
           @if (k === 'transfer') {
             <div class="field">
               <label for="toAccountId">To account</label>
-              <select id="toAccountId" formControlName="toAccountId" [attr.aria-invalid]="bad('toAccountId')">
-                <option value="">Choose…</option>
-                @for (a of accountsFor(form.controls.toAccountId.value); track a.id) { <option [value]="a.id">{{ a.name }}</option> }
-              </select>
+              <app-select inputId="toAccountId" formControlName="toAccountId" [options]="accountOpts(form.controls.toAccountId.value)" [invalid]="bad('toAccountId')" />
               @if (bad('toAccountId')) { <span class="err">Choose a different destination account.</span> }
             </div>
           } @else {
             <div class="field">
               <label for="paymentMethod">Payment method</label>
-              <select id="paymentMethod" formControlName="paymentMethod">
-                <option value="">Not specified</option>
-                @for (p of methods; track p.id) { <option [value]="p.id">{{ p.name }}</option> }
-              </select>
+              <app-select inputId="paymentMethod" formControlName="paymentMethod" [options]="methodOpts" />
             </div>
           }
 
@@ -199,7 +180,7 @@ export class TxForm implements OnInit {
   private readonly router = inject(Router);
   private readonly fb = inject(NonNullableFormBuilder);
 
-  protected readonly methods = PAYMENT_METHODS;
+  protected readonly methodOpts = toOptions(PAYMENT_METHODS, 'Not specified');
   protected readonly kind = signal<TxType | null>(null);
   protected readonly heading = computed(() => (this.kind() ? HEADINGS[this.kind()!] : ''));
   protected readonly saving = signal(false);
@@ -232,8 +213,15 @@ export class TxForm implements OnInit {
 
   protected readonly selectedLoan = computed(() => this.loans().find((v) => v.loan.id === this.value().loanId));
   protected readonly loanOptions = computed(() =>
-    this.loans().filter((v) => v.remaining > 0 || v.loan.id === this.existing?.loanId),
+    this.loans()
+      .filter((v) => v.remaining > 0 || v.loan.id === this.existing?.loanId)
+      .map((v) => ({
+        value: v.loan.id,
+        label: `${v.loan.type === 'lend' ? 'Owed to me by' : 'I owe'} ${v.loan.counterparty} — ${formatMoney(v.remaining)} left`,
+      })),
   );
+  protected readonly expenseCatOpts = computed(() => toOptions(this.lookups.expenseCats()));
+  protected readonly incomeCatOpts = computed(() => toOptions(this.lookups.incomeCats()));
   protected readonly people = computed(() => [...new Set(this.loans().map((v) => v.loan.counterparty ?? ''))].filter(Boolean).sort());
 
   protected readonly accountLabel = computed(() => {
@@ -274,6 +262,7 @@ export class TxForm implements OnInit {
       if (this.kind() === 'repayment' || this.kind() === 'lend' || this.kind() === 'borrow') {
         this.loans.set(loanViews(await this.repo.loanRecords(), today()));
         if (!this.existing) this.loanPicked();
+        this.form.controls.loanId.valueChanges.subscribe(() => this.loanPicked());
       }
       if (!this.existing) this.form.valueChanges.subscribe(() => this.saveDraft());
     } catch (e) {
@@ -309,8 +298,8 @@ export class TxForm implements OnInit {
   }
 
   /** Active accounts, plus the currently selected one even if it was deactivated later. */
-  protected accountsFor(selected: string) {
-    return this.lookups.accounts().filter((a) => a.active || a.id === selected);
+  protected accountOpts(selected: string, empty?: string) {
+    return toOptions(this.lookups.accounts().filter((a) => a.active || a.id === selected), empty);
   }
 
   protected remainingFor(v: LoanView) {

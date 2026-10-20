@@ -8,10 +8,11 @@ import { parseMoney, toAmountInput } from '../core/money';
 import { Repo } from '../core/repo';
 import { load, MoneyPipe, Ui } from '../core/ui';
 import { Icon } from '../shared/icon';
+import { Select, toOptions } from '../shared/select';
 
 @Component({
   selector: 'app-accounts',
-  imports: [ReactiveFormsModule, MoneyPipe, Icon],
+  imports: [ReactiveFormsModule, MoneyPipe, Icon, Select],
   template: `
     <header class="page-head">
       <h1>Banks & accounts</h1>
@@ -50,7 +51,7 @@ import { Icon } from '../shared/icon';
             @if (form.controls.name.invalid && form.controls.name.touched) { <span class="err">Required.</span> }</div>
           <div class="field"><label for="a-bank">Bank name</label><input id="a-bank" formControlName="bankName" maxlength="100" /></div>
           <div class="field"><label for="a-kind">Account type</label>
-            <select id="a-kind" formControlName="kind">@for (k of kinds; track k.id) { <option [value]="k.id">{{ k.name }}</option> }</select></div>
+            <app-select inputId="a-kind" formControlName="kind" [options]="kindOpts" /></div>
           <div class="field"><label for="a-nick">Nickname</label><input id="a-nick" formControlName="nickname" maxlength="100" /></div>
           <div class="field"><label for="a-last4">Last 4 digits (optional)</label><input id="a-last4" formControlName="last4" inputmode="numeric" maxlength="4" />
             @if (form.controls.last4.invalid) { <span class="err">Exactly 4 digits.</span> }</div>
@@ -71,7 +72,7 @@ export class Accounts {
   private readonly repo = inject(Repo);
   private readonly ui = inject(Ui);
   private readonly dlg = viewChild.required<ElementRef<HTMLDialogElement>>('dlg');
-  protected readonly kinds = ACCOUNT_KINDS;
+  protected readonly kindOpts = toOptions(ACCOUNT_KINDS);
   protected readonly dateLabel = dateLabel;
   protected editing?: Account;
 

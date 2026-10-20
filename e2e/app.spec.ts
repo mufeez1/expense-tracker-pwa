@@ -3,11 +3,19 @@ import { readFile } from 'node:fs/promises';
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
 
+/** Pick from the custom dropdown, typing into its search box when it has one. */
+async function choose(page: Page, label: string | RegExp, option: string, opts?: { exact?: boolean }) {
+  await page.getByLabel(label, opts).click();
+  const search = page.getByLabel('Search options');
+  if (await search.isVisible()) await search.fill(option.slice(0, 4));
+  await page.getByRole('option', { name: option, exact: true }).click();
+}
+
 async function addExpense(page: Page, amount: string, title: string, bank = 'MCB Bank') {
   await page.goto('/new/expense');
   await page.getByLabel(/^Amount/).fill(amount);
-  await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Food and groceries' });
-  await page.getByLabel('Paid from').selectOption({ label: bank });
+  await choose(page, 'Category', 'Food and groceries', { exact: true });
+  await choose(page, 'Paid from', bank);
   await page.getByLabel(/^Title/).fill(title);
 }
 
@@ -26,7 +34,13 @@ test('adds an expense with a receipt, persists it, then deletes it', async ({ pa
 
   await page.goto('/expenses');
   await expect(page.getByRole('link', { name: 'Groceries' })).toBeVisible();
-  await page.getByLabel('Search').fill('grocer');
+  await page.getByLabel('Search', { exact: true }).fill('grocer');
+  await expect(page.getByText('1 record')).toBeVisible();
+  await page.getByRole('button', { name: 'Filters' }).click();
+  await choose(page, 'Payment method', 'Cash');
+  await expect(page.getByText('0 records')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear all' }).click();
+  await page.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByText('1 record')).toBeVisible();
 
   await page.goto(detailUrl);
@@ -48,7 +62,7 @@ test('lending with partial repayment; overpayment is blocked; totals stay separa
   await page.goto('/new/lend');
   await page.getByLabel(/^Amount/).fill('20000');
   await page.getByLabel('Person you lent to').fill('Ahmed');
-  await page.getByLabel('Paid from').selectOption({ label: 'MCB Bank' });
+  await choose(page, 'Paid from', 'MCB Bank');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.locator('.detail-amount')).toHaveText('Rs. 20,000.00');
 
@@ -75,11 +89,11 @@ test('lending with partial repayment; overpayment is blocked; totals stay separa
 test('transfers between own accounts are not income or expense', async ({ page }) => {
   await page.goto('/new/transfer');
   await page.getByLabel(/^Amount/).fill('30000');
-  await page.getByLabel('From account').selectOption({ label: 'MCB Bank' });
-  await page.getByLabel('To account').selectOption({ label: 'MCB Bank' });
+  await choose(page, 'From account', 'MCB Bank');
+  await choose(page, 'To account', 'MCB Bank');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Choose a different destination account.')).toBeVisible();
-  await page.getByLabel('To account').selectOption({ label: 'Soneri Bank' });
+  await choose(page, 'To account', 'Soneri Bank');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { name: 'MCB Bank → Soneri Bank' })).toBeVisible();
   await page.goto('/');

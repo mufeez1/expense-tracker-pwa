@@ -6,14 +6,16 @@ import { PAYMENT_METHODS, PaymentMethod, TX_LABEL, TX_TYPES, TxType } from '../c
 import { parseMoney } from '../core/money';
 import { Repo, TxFilter } from '../core/repo';
 import { load } from '../core/ui';
+import { FilterSheet } from '../shared/filter-sheet';
 import { Icon } from '../shared/icon';
+import { Select, SelectOption, toOptions } from '../shared/select';
 import { TxTable } from '../shared/tx-table';
 
 const PAGE = 50;
 
 @Component({
   selector: 'app-tx-list',
-  imports: [FormsModule, RouterLink, Icon, TxTable],
+  imports: [FormsModule, RouterLink, Icon, TxTable, FilterSheet, Select],
   template: `
     <header class="page-head">
       <h1>{{ heading() }}</h1>
@@ -22,59 +24,47 @@ const PAGE = 50;
       }
     </header>
 
-    <div class="search">
-      <app-icon name="search" />
-      <input type="search" placeholder="Search title, merchant, person, reference, notes" [ngModel]="qInput()" (ngModelChange)="search($event)" aria-label="Search" />
+    <div class="toolbar">
+      <div class="search">
+        <app-icon name="search" />
+        <input type="search" placeholder="Search title, merchant, person, reference, notes" [ngModel]="qInput()" (ngModelChange)="search($event)" aria-label="Search" />
+      </div>
+      <app-filter-sheet [active]="activeFilters()" (clear)="reset()">
+        @if (!types()) {
+          <div class="chips" role="group" aria-label="Type">
+            @for (t of allTypes; track t) {
+              <button type="button" class="chip" [class.on]="typeSel().includes(t)" [attr.aria-pressed]="typeSel().includes(t)" (click)="toggleType(t)">{{ label[t] }}</button>
+            }
+          </div>
+        }
+        <div class="form-grid">
+          <div class="field"><label for="f-from">From</label><input id="f-from" type="date" [(ngModel)]="from" /></div>
+          <div class="field"><label for="f-to">To</label><input id="f-to" type="date" [(ngModel)]="to" /></div>
+          <div class="field">
+            <label for="f-acc">Bank / account</label>
+            <app-select inputId="f-acc" [options]="accountOpts()" [(ngModel)]="accountId" />
+          </div>
+          <div class="field">
+            <label for="f-cat">Category</label>
+            <app-select inputId="f-cat" [options]="categoryOpts()" [(ngModel)]="categoryId" />
+          </div>
+          <div class="field">
+            <label for="f-pm">Payment method</label>
+            <app-select inputId="f-pm" [options]="methodOpts" [(ngModel)]="paymentMethod" />
+          </div>
+          <div class="field"><label for="f-min">Min amount</label><input id="f-min" inputmode="decimal" [(ngModel)]="min" /></div>
+          <div class="field"><label for="f-max">Max amount</label><input id="f-max" inputmode="decimal" [(ngModel)]="max" /></div>
+          <div class="field">
+            <label for="f-sort">Sort by</label>
+            <app-select inputId="f-sort" [options]="sortOpts" [(ngModel)]="sort" />
+          </div>
+        </div>
+        <div class="row wrap">
+          <label class="check"><input type="checkbox" [(ngModel)]="asc" /> Ascending</label>
+          <label class="check"><input type="checkbox" [(ngModel)]="hasAttachment" /> With attachments only</label>
+        </div>
+      </app-filter-sheet>
     </div>
-
-    <details class="card filters" [open]="wide">
-      <summary>Filters & sorting {{ activeFilters() ? '(' + activeFilters() + ' active)' : '' }}</summary>
-      @if (!types()) {
-        <div class="chips" role="group" aria-label="Type">
-          @for (t of allTypes; track t) {
-            <button type="button" class="chip" [class.on]="typeSel().includes(t)" [attr.aria-pressed]="typeSel().includes(t)" (click)="toggleType(t)">{{ label[t] }}</button>
-          }
-        </div>
-      }
-      <div class="form-grid">
-        <div class="field"><label for="f-from">From</label><input id="f-from" type="date" [(ngModel)]="from" /></div>
-        <div class="field"><label for="f-to">To</label><input id="f-to" type="date" [(ngModel)]="to" /></div>
-        <div class="field">
-          <label for="f-acc">Bank / account</label>
-          <select id="f-acc" [(ngModel)]="accountId">
-            <option value="">All</option>
-            @for (a of lookups.accounts(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }
-          </select>
-        </div>
-        <div class="field">
-          <label for="f-cat">Category</label>
-          <select id="f-cat" [(ngModel)]="categoryId">
-            <option value="">All</option>
-            @for (c of lookups.categories(); track c.id) { <option [value]="c.id">{{ c.name }}{{ c.kind === 'income' ? ' (income)' : '' }}</option> }
-          </select>
-        </div>
-        <div class="field">
-          <label for="f-pm">Payment method</label>
-          <select id="f-pm" [(ngModel)]="paymentMethod">
-            <option value="">All</option>
-            @for (p of methods; track p.id) { <option [value]="p.id">{{ p.name }}</option> }
-          </select>
-        </div>
-        <div class="field"><label for="f-min">Min amount</label><input id="f-min" inputmode="decimal" [(ngModel)]="min" /></div>
-        <div class="field"><label for="f-max">Max amount</label><input id="f-max" inputmode="decimal" [(ngModel)]="max" /></div>
-        <div class="field">
-          <label for="f-sort">Sort by</label>
-          <select id="f-sort" [(ngModel)]="sort">
-            <option value="date">Date</option><option value="amount">Amount</option><option value="title">Title</option><option value="updated">Recently updated</option>
-          </select>
-        </div>
-      </div>
-      <div class="row wrap">
-        <label class="check"><input type="checkbox" [(ngModel)]="asc" /> Ascending</label>
-        <label class="check"><input type="checkbox" [(ngModel)]="hasAttachment" /> With attachments only</label>
-        <button type="button" class="btn ghost sm" (click)="reset()">Clear filters</button>
-      </div>
-    </details>
 
     <p class="muted count">{{ result().total }} record{{ result().total === 1 ? '' : 's' }}</p>
     @if (result().items.length) {
@@ -95,9 +85,18 @@ export class TxList {
   private readonly repo = inject(Repo);
   protected readonly label = TX_LABEL;
   protected readonly allTypes = TX_TYPES;
-  protected readonly methods = PAYMENT_METHODS;
+  protected readonly methodOpts = toOptions(PAYMENT_METHODS, 'All');
+  protected readonly sortOpts: SelectOption[] = [
+    { value: 'date', label: 'Date' },
+    { value: 'amount', label: 'Amount' },
+    { value: 'title', label: 'Title' },
+    { value: 'updated', label: 'Recently updated' },
+  ];
+  protected readonly accountOpts = computed(() => toOptions(this.lookups.accounts(), 'All'));
+  protected readonly categoryOpts = computed(() =>
+    toOptions(this.lookups.categories().map((c) => ({ id: c.id, name: c.kind === 'income' ? `${c.name} (income)` : c.name })), 'All'),
+  );
   protected readonly PAGE = PAGE;
-  protected readonly wide = matchMedia('(min-width: 900px)').matches;
 
   protected readonly qInput = signal('');
   private readonly q = signal('');

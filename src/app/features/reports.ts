@@ -6,11 +6,13 @@ import { Pwa } from '../core/pwa';
 import { buildReport, renderPdf, ReportKind, toCsv } from '../core/report';
 import { Repo } from '../core/repo';
 import { load, MoneyPipe, shareOrDownload, Ui } from '../core/ui';
+import { FilterSheet } from '../shared/filter-sheet';
 import { Icon } from '../shared/icon';
+import { Select, SelectOption, toOptions } from '../shared/select';
 
 @Component({
   selector: 'app-reports',
-  imports: [FormsModule, MoneyPipe, Icon],
+  imports: [FormsModule, MoneyPipe, Icon, FilterSheet, Select],
   template: `
     <header class="page-head"><h1>Reports</h1></header>
 
@@ -26,33 +28,29 @@ import { Icon } from '../shared/icon';
           <div class="field"><label for="r-from">From</label><input id="r-from" type="date" [(ngModel)]="from" /></div>
           <div class="field"><label for="r-to">To</label><input id="r-to" type="date" [(ngModel)]="to" /></div>
         }
-        <div class="field">
-          <label for="r-kind">Report type</label>
-          <select id="r-kind" [(ngModel)]="kind">
-            <option value="overview">Combined overview</option>
-            <option value="expense">Expenses only</option>
-            <option value="income">Income only</option>
-            <option value="loans">Lending & borrowing</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="r-acc">Bank / account</label>
-          <select id="r-acc" [(ngModel)]="accountId">
-            <option value="">All banks & accounts</option>
-            @for (a of lookups.accounts(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }
-          </select>
-        </div>
-        <div class="field">
-          <label for="r-cat">Category</label>
-          <select id="r-cat" [(ngModel)]="categoryId">
-            <option value="">All categories</option>
-            @for (c of lookups.categories(); track c.id) { <option [value]="c.id">{{ c.name }}{{ c.kind === 'income' ? ' (income)' : '' }}</option> }
-          </select>
-        </div>
       </div>
-      <div class="row wrap">
-        @if (kind() === 'overview') { <label class="check"><input type="checkbox" [(ngModel)]="includeLoans" /> Include lending & borrowing page</label> }
-        <label class="check"><input type="checkbox" [(ngModel)]="redact" /> Remove personal details (names, notes, references)</label>
+      <div class="toolbar">
+        <p class="muted small grow">{{ summary() }}</p>
+        <app-filter-sheet title="Report filters" [active]="activeFilters()" (clear)="reset()">
+          <div class="form-grid">
+            <div class="field">
+              <label for="r-kind">Report type</label>
+              <app-select inputId="r-kind" [options]="kindOpts" [(ngModel)]="kind" />
+            </div>
+            <div class="field">
+              <label for="r-acc">Bank / account</label>
+              <app-select inputId="r-acc" [options]="accountOpts()" [(ngModel)]="accountId" />
+            </div>
+            <div class="field">
+              <label for="r-cat">Category</label>
+              <app-select inputId="r-cat" [options]="categoryOpts()" [(ngModel)]="categoryId" />
+            </div>
+          </div>
+          <div class="row wrap">
+            @if (kind() === 'overview') { <label class="check"><input type="checkbox" [(ngModel)]="includeLoans" /> Include lending & borrowing page</label> }
+            <label class="check"><input type="checkbox" [(ngModel)]="redact" /> Remove personal details (names, notes, references)</label>
+          </div>
+        </app-filter-sheet>
       </div>
       @if (range()[0] > range()[1]) { <p class="err">The start date is after the end date.</p> }
     </section>
@@ -94,6 +92,25 @@ export class Reports {
   protected readonly includeLoans = signal(true);
   protected readonly redact = signal(false);
 
+  protected readonly kindOpts: SelectOption[] = [
+    { value: 'overview', label: 'Combined overview' },
+    { value: 'expense', label: 'Expenses only' },
+    { value: 'income', label: 'Income only' },
+    { value: 'loans', label: 'Lending & borrowing' },
+  ];
+  protected readonly accountOpts = computed(() => toOptions(this.lookups.accounts(), 'All banks & accounts'));
+  protected readonly categoryOpts = computed(() =>
+    toOptions(this.lookups.categories().map((c) => ({ id: c.id, name: c.kind === 'income' ? `${c.name} (income)` : c.name })), 'All categories'),
+  );
+  protected readonly activeFilters = computed(() => [this.kind() !== 'overview', this.accountId(), this.categoryId(), this.kind() === 'overview' && !this.includeLoans(), this.redact()].filter(Boolean).length);
+  protected readonly summary = computed(() =>
+    [
+      this.kindOpts.find((k) => k.value === this.kind())?.label,
+      this.accountOpts().find((a) => a.value === this.accountId())?.label,
+      this.categoryOpts().find((c) => c.value === this.categoryId())?.label,
+    ].join(' · '),
+  );
+
   protected readonly range = computed<[string, string]>(() => (this.mode() === 'month' ? monthRange(this.month()) : [this.from(), this.to()]));
 
   private readonly input = load(
@@ -124,6 +141,14 @@ export class Reports {
       },
     );
   });
+
+  protected reset() {
+    this.kind.set('overview');
+    this.accountId.set('');
+    this.categoryId.set('');
+    this.includeLoans.set(true);
+    this.redact.set(false);
+  }
 
   private get fileBase() {
     const [from, to] = this.range();
