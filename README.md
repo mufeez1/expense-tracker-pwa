@@ -14,7 +14,7 @@ npm install
 npm start                 # dev server http://localhost:4200 (service worker disabled in dev)
 npm test                  # 40 unit tests (Vitest + fake-indexeddb)
 npm run e2e               # 14 Playwright runs (desktop + Pixel 7) against the production build, uses local Chrome
-E2E_BASE_URL=https://expense-tracker-pwa-5ix8.netlify.app npm run e2e   # same suite against the live site
+E2E_BASE_URL=https://mufeez1.github.io/expense-tracker-pwa/ npm run e2e   # same suite against the live site
 npm run build             # production build -> dist/expense-tracker/browser
 npm run serve:prod        # serve the production build on http://localhost:4300 (service worker active)
 node scripts/demo-data.mjs 600 demo-backup.zip   # importable demo data (use 10000 to benchmark)
@@ -84,7 +84,14 @@ duplicates and conflicts, then writes in **one transaction** — an interrupted 
 
 ## Deployment
 
-**Live:** https://expense-tracker-pwa-5ix8.netlify.app (Netlify; config in `netlify.toml`).
+**Live:** https://mufeez1.github.io/expense-tracker-pwa/
+
+Every push to `main` runs `.github/workflows/pages.yml`, which installs, runs the unit tests, builds with
+`--base-href /expense-tracker-pwa/`, copies `index.html` to `404.html` (deep links like `/loans` load the app,
+with HTTP status 404, which browsers ignore) and publishes to GitHub Pages. Check runs with `gh run list`.
+To test the sub-path build locally: `npx ng build --base-href /expense-tracker-pwa/ && node scripts/ngsw-unpin-index.mjs && node scripts/serve.mjs 4301 /expense-tracker-pwa/`.
+
+`netlify.toml` is kept for hosting on Netlify instead; note that Netlify's free plan adds a "Powered by Netlify" badge.
 
 Any static HTTPS host (Netlify, Vercel, Cloudflare Pages, GitHub Pages, nginx). Requirements:
 
