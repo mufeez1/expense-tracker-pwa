@@ -39,7 +39,11 @@ test('adds an expense with a receipt, persists it, then deletes it', async ({ pa
   await page.getByRole('button', { name: 'Filters' }).click();
   await choose(page, 'Payment method', 'Cash');
   await expect(page.getByText('0 records')).toBeVisible();
+  const asc = page.getByLabel('Ascending');
+  await asc.check(); // regression: the popup's click handler used to cancel checkbox clicks
+  await expect(asc).toBeChecked();
   await page.getByRole('button', { name: 'Clear all' }).click();
+  await expect(asc).not.toBeChecked();
   await page.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByText('1 record')).toBeVisible();
 
@@ -179,4 +183,34 @@ test('works offline after the first visit', async ({ page, context, isMobile }) 
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Expense saved.')).toBeVisible();
   await context.setOffline(false);
+});
+
+test('dark theme, colour and background can be chosen and survive a reload', async ({ page }) => {
+  await page.goto('/settings');
+  await page.getByRole('radio', { name: 'Dark' }).click();
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await expect.poll(bg).toBe('rgb(15, 17, 23)');
+  await page.reload();
+  await expect.poll(bg).toBe('rgb(15, 17, 23)');
+  await expect(page.getByRole('radio', { name: 'Dark' })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('radio', { name: 'Light' }).click();
+  await expect.poll(bg).toBe('rgb(246, 247, 251)');
+
+  const primary = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--primary').trim());
+  await page.getByRole('radio', { name: 'Teal' }).click();
+  await expect.poll(primary).toBe('#0f5257');
+  await page.reload();
+  await expect.poll(primary).toBe('#0f5257');
+  await page.getByRole('radio', { name: 'Dark' }).click();
+  await expect.poll(primary).toBe('#5eead4');
+
+  const accent = page.getByRole('radiogroup', { name: /Colour/ });
+  const background = page.getByRole('radiogroup', { name: 'Background' });
+  await accent.getByRole('radio', { name: 'Dusty gray' }).click();
+  await expect.poll(primary).toBe('#c4bcbe');
+  await background.getByRole('radio', { name: 'Warm' }).click();
+  await expect.poll(bg).toBe('rgb(20, 17, 13)');
+  await page.getByRole('radio', { name: 'Light' }).click();
+  await expect.poll(bg).toBe('rgb(250, 246, 240)');
+  await expect.poll(primary).toBe('#6f6a6c');
 });

@@ -1,3 +1,5 @@
+@use 'sass:list';
+
 :root {
   --font:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -12,11 +14,144 @@
   --pos: #15803d;
   --neg: #c2410c;
   --exp: #c53030;
+  --info: #0369a1;
+  --warn: #b45309;
+  --warn-text: #7c4a03;
+  --on-primary: #fff;
   --radius: 14px;
   --nav-h: 64px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
   color-scheme: light;
+}
+
+@mixin dark-tokens {
+  --primary: #8b97ff;
+  --primary-2: #a5aefc;
+  --accent: #a5b4fc;
+  --bg: #0f1117;
+  --surface: #181b24;
+  --text: #e6e8ef;
+  --muted: #9aa3b5;
+  --border: #2a2f3c;
+  --pos: #4ade80;
+  --neg: #fb923c;
+  --exp: #f87171;
+  --info: #7dd3fc;
+  --warn: #fbbf24;
+  --warn-text: #fcd34d;
+  --on-primary: #0d1230;
+  color-scheme: dark;
+}
+:root[data-theme='dark'] {
+  @include dark-tokens;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include dark-tokens;
+  }
+}
+
+// Colour choices (Settings → Appearance). Indigo is the default above.
+// light: primary, primary-2, accent (links, ≥4.5:1 on white) · dark: primary, primary-2, accent
+$accents: (
+  'teal': (#0f5257, #13676d, #0f766e, #5eead4, #99f6e4, #5eead4),
+  'emerald': (#14532d, #166534, #15803d, #6ee7a0, #a7f3c4, #86efac),
+  'violet': (#4c1d95, #5b21b6, #6d28d9, #c4b5fd, #ddd6fe, #c4b5fd),
+  'rose': (#881337, #9f1239, #be123c, #fda4af, #fecdd3, #fda4af),
+  'amber': (#78350f, #92400e, #b45309, #fcd34d, #fde68a, #fcd34d),
+  'slate': (#1e293b, #334155, #475569, #cbd5e1, #e2e8f0, #cbd5e1),
+  'dusty': (#6f6a6c, #827c7e, #625d5f, #c4bcbe, #d6cfd1, #c9c1c3),
+);
+@mixin accent-dark($c) {
+  --primary: #{list.nth($c, 4)};
+  --primary-2: #{list.nth($c, 5)};
+  --accent: #{list.nth($c, 6)};
+}
+@each $name, $c in $accents {
+  :root[data-accent='#{$name}'] {
+    --primary: #{list.nth($c, 1)};
+    --primary-2: #{list.nth($c, 2)};
+    --accent: #{list.nth($c, 3)};
+  }
+  :root[data-accent='#{$name}'][data-theme='dark'] {
+    @include accent-dark($c);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root[data-accent='#{$name}']:not([data-theme='light']) {
+      @include accent-dark($c);
+    }
+  }
+}
+// Page backgrounds (Settings → Appearance). Cards stay white in light mode; dark surfaces are tinted to match.
+// light bg, light border · dark bg, dark surface, dark border
+$backgrounds: (
+  'warm': (#faf6f0, #ebe4da, #14110d, #1e1a15, #302a22),
+  'mint': (#f0f8f4, #dbeae2, #0c1412, #151f1c, #24332e),
+  'sky': (#eef5fb, #d9e6f2, #0c121a, #151c26, #243142),
+  'lavender': (#f5f2fb, #e4def2, #110f19, #1b1826, #2d283f),
+  'dusty': (#ece9ea, #dcd7d9, #151314, #1f1c1d, #322e30),
+  'plain': (#ffffff, #e5e7ef, #000000, #121212, #262626),
+);
+@mixin bg-dark($c) {
+  --bg: #{list.nth($c, 3)};
+  --surface: #{list.nth($c, 4)};
+  --border: #{list.nth($c, 5)};
+}
+@each $name, $c in $backgrounds {
+  :root[data-bg='#{$name}'] {
+    --bg: #{list.nth($c, 1)};
+    --border: #{list.nth($c, 2)};
+  }
+  :root[data-bg='#{$name}'][data-theme='dark'] {
+    @include bg-dark($c);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root[data-bg='#{$name}']:not([data-theme='light']) {
+      @include bg-dark($c);
+    }
+  }
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    background: var(--surface);
+    color: var(--text);
+    font: 500 0.88rem var(--font);
+    cursor: pointer;
+    &[aria-checked='true'] {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent) inset;
+      font-weight: 600;
+    }
+  }
+  i {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    color: #fff;
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+  }
+}
+.swatches.bg i {
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
 * {
@@ -88,7 +223,7 @@ h3 {
   height: 30px;
   border-radius: 9px;
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary);
   font-size: 15px;
 }
 .main {
@@ -130,7 +265,7 @@ h3 {
     border-radius: 50%;
     border: 0;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
     box-shadow: 0 6px 16px rgb(30 42 99 / 0.3);
     cursor: pointer;
     .icon {
@@ -309,7 +444,7 @@ h3 {
   &.primary {
     background: var(--primary);
     border-color: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
     &:hover:not(:disabled) {
       background: var(--primary-2);
     }
@@ -323,7 +458,7 @@ h3 {
   &.danger:not(.ghost) {
     background: var(--exp);
     border-color: var(--exp);
-    color: #fff;
+    color: var(--on-primary);
   }
   &.sm {
     min-height: 36px;
@@ -609,7 +744,7 @@ progress {
   padding: 0 6px;
   border-radius: 99px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-primary);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
@@ -635,7 +770,7 @@ progress {
   &.on {
     background: var(--primary);
     border-color: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
   }
 }
 .count {
@@ -718,7 +853,7 @@ progress {
     font-weight: 600;
     padding: 10px 12px;
     border-bottom: 1px solid var(--border);
-    background: #fafbfd;
+    background: color-mix(in srgb, var(--bg) 60%, var(--surface));
   }
   td {
     padding: 11px 12px;
@@ -732,7 +867,7 @@ progress {
     cursor: pointer;
   }
   tbody tr:hover {
-    background: #fafbff;
+    background: color-mix(in srgb, var(--accent) 5%, var(--surface));
   }
   .num {
     text-align: right;
@@ -845,37 +980,37 @@ progress {
   color: var(--muted);
   white-space: nowrap;
   &.expense {
-    background: #fdecec;
+    background: color-mix(in srgb, var(--exp) 12%, var(--surface));
     color: var(--exp);
   }
   &.income {
-    background: #e8f6ee;
+    background: color-mix(in srgb, var(--pos) 12%, var(--surface));
     color: var(--pos);
   }
   &.lend,
   &.borrow {
-    background: #eef0ff;
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
     color: var(--accent);
   }
   &.transfer,
   &.repayment {
-    background: #eef6fb;
-    color: #0369a1;
+    background: color-mix(in srgb, var(--info) 12%, var(--surface));
+    color: var(--info);
   }
   &.overdue {
-    background: #fdecec;
+    background: color-mix(in srgb, var(--exp) 12%, var(--surface));
     color: var(--exp);
   }
   &.partial {
-    background: #fff6e5;
-    color: #b45309;
+    background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+    color: var(--warn);
   }
   &.repaid {
-    background: #e8f6ee;
+    background: color-mix(in srgb, var(--pos) 12%, var(--surface));
     color: var(--pos);
   }
   &.outstanding {
-    background: #eef0ff;
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
     color: var(--accent);
   }
 }
@@ -983,7 +1118,7 @@ progress {
     right: 2px;
     width: 30px;
     height: 30px;
-    background: rgb(255 255 255 / 0.9);
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
   }
 }
 
@@ -1246,23 +1381,23 @@ dialog::backdrop {
     position: absolute;
     top: calc(var(--safe-t) + 10px);
     right: 10px;
-    background: rgb(255 255 255 / 0.85);
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
   }
 }
 
 // ---- feedback ----
 .banner {
-  background: #fff6e5;
-  color: #7c4a03;
-  border: 1px solid #f6dfb2;
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  color: var(--warn-text);
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--surface));
   padding: 10px 14px;
   border-radius: 12px;
   margin-bottom: 12px;
   font-size: 0.9rem;
   &.info {
-    background: #eef0ff;
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
     color: var(--primary);
-    border-color: #d9dcff;
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--surface));
     display: flex;
     gap: 10px;
     align-items: center;
@@ -1294,7 +1429,7 @@ dialog::backdrop {
 }
 .toast {
   background: var(--text);
-  color: #fff;
+  color: var(--bg);
   padding: 12px 16px;
   border-radius: 12px;
   font-size: 0.9rem;

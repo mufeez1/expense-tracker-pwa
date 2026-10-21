@@ -9,7 +9,8 @@ import { Tx } from '../core/models';
 import { formatMoney } from '../core/money';
 import { Repo } from '../core/repo';
 import { load, MoneyPipe, Ui } from '../core/ui';
-import { ChartView, PALETTE } from '../shared/chart';
+import { ChartView, palette } from '../shared/chart';
+import { Theme } from '../core/theme';
 import { Icon } from '../shared/icon';
 import { TxTable } from '../shared/tx-table';
 
@@ -78,6 +79,7 @@ const TREND_MONTHS = 6;
   `,
 })
 export class Dashboard {
+  private readonly theme = inject(Theme);
   protected readonly ui = inject(Ui);
   private readonly repo = inject(Repo);
   private readonly lookups = inject(Lookups);
@@ -139,7 +141,7 @@ export class Dashboard {
     type: 'doughnut',
     data: {
       labels: this.byCategory().map((g) => g.key),
-      datasets: [{ data: this.byCategory().map((g) => g.total / 100), backgroundColor: PALETTE }],
+      datasets: [{ data: this.byCategory().map((g) => g.total / 100), backgroundColor: palette(this.theme.colors().primary) }],
     },
     options: { plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatMoney(Math.round((c.raw as number) * 100))}` } } } },
   }));
@@ -147,7 +149,7 @@ export class Dashboard {
     type: 'bar',
     data: {
       labels: this.byAccount().map((g) => g.key),
-      datasets: [{ label: 'Spending', data: this.byAccount().map((g) => g.total / 100), backgroundColor: '#1e2a63' }],
+      datasets: [{ label: 'Spending', data: this.byAccount().map((g) => g.total / 100), backgroundColor: this.theme.colors().primary }],
     },
     options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatMoney(Math.round((c.raw as number) * 100)) } } } },
   }));

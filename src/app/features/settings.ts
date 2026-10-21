@@ -5,6 +5,7 @@ import { formatBytes } from '../core/attachments';
 import { Lookups } from '../core/lookups';
 import { Pwa } from '../core/pwa';
 import { Repo } from '../core/repo';
+import { ACCENTS, BACKGROUNDS, Theme, ThemeMode } from '../core/theme';
 import { load, Ui } from '../core/ui';
 
 @Component({
@@ -12,6 +13,38 @@ import { load, Ui } from '../core/ui';
   imports: [FormsModule, RouterLink],
   template: `
     <header class="page-head"><h1>Settings</h1></header>
+
+    <section class="card">
+      <h2 id="s-theme">Appearance</h2>
+      <div class="tabs" role="radiogroup" aria-labelledby="s-theme">
+        @for (t of themes; track t.id) {
+          <button type="button" role="radio" [class.on]="theme.mode() === t.id" [attr.aria-checked]="theme.mode() === t.id" (click)="theme.setMode(t.id)">{{ t.name }}</button>
+        }
+      </div>
+      <h3 id="s-accent">Colour <span class="muted">(buttons & highlights)</span></h3>
+      <div class="swatches" role="radiogroup" aria-labelledby="s-accent">
+        @for (a of accents; track a.id) {
+          <button type="button" role="radio" [attr.aria-checked]="theme.accent() === a.id" (click)="theme.setAccent(a.id)">
+            <i [style.background]="a.swatch" aria-hidden="true">
+              @if (theme.accent() === a.id) { <svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg> }
+            </i>
+            {{ a.name }}
+          </button>
+        }
+      </div>
+      <h3 id="s-bg">Background</h3>
+      <div class="swatches bg" role="radiogroup" aria-labelledby="s-bg">
+        @for (b of backgrounds; track b.id) {
+          <button type="button" role="radio" [attr.aria-checked]="theme.background() === b.id" (click)="theme.setBackground(b.id)">
+            <i [style.background]="theme.dark() ? b.dark : b.light" aria-hidden="true">
+              @if (theme.background() === b.id) { <svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg> }
+            </i>
+            {{ b.name }}
+          </button>
+        }
+      </div>
+      <p class="muted small">System follows your device's light or dark setting. These choices are saved on this device only.</p>
+    </section>
 
     <section class="card form">
       <h2>Currency</h2>
@@ -74,6 +107,14 @@ import { load, Ui } from '../core/ui';
 })
 export class Settings {
   protected readonly pwa = inject(Pwa);
+  protected readonly theme = inject(Theme);
+  protected readonly accents = ACCENTS;
+  protected readonly backgrounds = BACKGROUNDS;
+  protected readonly themes: { id: ThemeMode; name: string }[] = [
+    { id: 'system', name: 'System' },
+    { id: 'light', name: 'Light' },
+    { id: 'dark', name: 'Dark' },
+  ];
   private readonly repo = inject(Repo);
   private readonly ui = inject(Ui);
   private readonly lookups = inject(Lookups);

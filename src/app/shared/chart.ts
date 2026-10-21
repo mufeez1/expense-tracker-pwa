@@ -1,8 +1,8 @@
 import { Component, DestroyRef, effect, ElementRef, inject, input, viewChild } from '@angular/core';
+import { Theme } from '../core/theme';
 import Chart, { ChartConfiguration } from 'chart.js/auto';
 
 Chart.defaults.font.family = getComputedStyle(document.documentElement).getPropertyValue('--font') || 'system-ui';
-Chart.defaults.color = '#64748b';
 
 @Component({
   selector: 'app-chart',
@@ -13,10 +13,15 @@ export class ChartView {
   readonly label = input('Chart');
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('c');
   private chart?: Chart;
+  private readonly theme = inject(Theme);
 
   constructor() {
     effect(() => {
       const cfg = this.config();
+      const t = this.theme.colors();
+      Chart.defaults.color = t.muted;
+      Chart.defaults.borderColor = t.border;
+      Chart.defaults.elements.arc.borderColor = t.surface;
       this.chart?.destroy();
       this.chart = new Chart(this.canvas().nativeElement, {
         ...cfg,
@@ -27,4 +32,5 @@ export class ChartView {
   }
 }
 
-export const PALETTE = ['#1e2a63', '#4f46e5', '#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#22c55e', '#ec4899'];
+/** Category colours, led by the user's chosen brand colour. */
+export const palette = (brand: string) => [brand, '#4f46e5', '#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#22c55e', '#ec4899'];

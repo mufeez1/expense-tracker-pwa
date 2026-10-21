@@ -14,6 +14,15 @@
     <link rel="icon" type="image/png" href="icons/icon-96x96.png" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
+    <script>
+      // Apply the saved theme before first paint (see core/theme.ts).
+      try {
+        var d = document.documentElement.dataset, t = localStorage.getItem('theme'), a = localStorage.getItem('accent'), b = localStorage.getItem('bg');
+        if (t === 'light' || t === 'dark') d.theme = t;
+        if (a) d.accent = a;
+        if (b) d.bg = b;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <app-root></app-root>

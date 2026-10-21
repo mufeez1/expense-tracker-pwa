@@ -2,6 +2,7 @@ import { Component, effect, ElementRef, inject, viewChild } from '@angular/core'
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Lookups } from './core/lookups';
 import { Pwa } from './core/pwa';
+import { Theme } from './core/theme';
 import { Ui } from './core/ui';
 import { Icon } from './shared/icon';
 
@@ -115,6 +116,7 @@ export class App {
 
   constructor() {
     inject(Lookups); // start syncing currency/accounts early
+    inject(Theme); // apply the saved light/dark preference
     effect(() => {
       const d = this.sheet().nativeElement;
       if (this.ui.addSheetOpen() && !d.open) d.showModal();

@@ -12,7 +12,7 @@ let seq = 0;
       <app-icon name="filter" /> Filters
       @if (active()) { <span class="filter-count" [attr.aria-label]="active() + ' active'">{{ active() }}</span> }
     </button>
-    <dialog #dlg class="sheet filter-sheet" [attr.aria-labelledby]="titleId" (click)="$event.target === dlg && close()">
+    <dialog #dlg class="sheet filter-sheet" [attr.aria-labelledby]="titleId" (click)="backdrop($event)">
       <div class="sheet-body">
         <div class="sheet-head">
           <h2 [id]="titleId">{{ title() }}</h2>
@@ -37,5 +37,10 @@ export class FilterSheet {
 
   protected close() {
     this.dlg().nativeElement.close();
+  }
+
+  // A handler that returns false makes Angular call preventDefault, which silently blocks checkboxes inside.
+  protected backdrop(e: MouseEvent) {
+    if (e.target === this.dlg().nativeElement) this.close();
   }
 }
